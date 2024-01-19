@@ -1,0 +1,54 @@
+from CP_methods import CryptoPayments
+
+# env import
+from environ import environ
+
+
+
+#env variables
+env = environ.Env()
+
+
+
+def check_coin_payment_status(payment_intent_id):
+    """
+    Checks the payment status of a coin transaction.
+
+    Parameters:
+        payment_intent_id (str): The ID of the payment intent.
+
+    Returns:
+        CoinPaymentsReceipt or None: The coin payment receipt if the payment status is complete and the custom value matches the payment intent ID. None otherwise.
+    """
+    try:
+        crypto_payments = CryptoPayments(
+            publicKey=env("PUBLIC_API_KEY"),
+            privateKey=env("PRIVATE_API_KEY"),
+            ipn_url='https://ukr.net/',
+        )
+
+        coin = crypto_payments.getTransactions(
+            limit=5,
+        )
+
+        for tx_id in coin['result']:
+            coin_2 = crypto_payments.getPaymentInfo(
+                txid=tx_id,
+            )
+
+            if coin_2['result']['checkout'].get('custom') == payment_intent_id:
+                if coin_2['result'].get('status') == 100 and coin_2['result'].get('status_text') == 'Complete':
+                    cp_success_receipt = get_object_or_404(
+                        CoinPaymentsReceipt,
+                        coin_payment_tx_id=coin_2['result']['checkout'].get('custom'),
+                        is_paid=False
+                    )
+                    cp_success_receipt.coinpayments_payment_id = tx_id
+                    cp_success_receipt.is_paid = True
+                    cp_success_receipt.recepient_address = coin_2['result'].get('payment_address')
+                    cp_success_receipt.save()
+                    return cp_success_receipt
+
+    except Exception as e:
+        logging.error(f"Error retrieving payment intent: {e}")
+        return None
