@@ -160,3 +160,26 @@ class CryptoPayments:
         }
 
         return self.Request(request_method="post", **params)
+
+
+    def sendCoins(self, amount: float, currency: str, address: str, dest_tag: str = None, ipn_url: str = None,
+                auto_confirm: int = None, note: str = None, currency2: str = None) -> Request:
+        """Send coins to a specified address or $PayByName tag."""
+
+        params = {
+            "cmd": "create_withdrawal",
+            "amount": amount,
+            "currency": currency,
+            "currency2": currency2,
+            "address": address,
+            "dest_tag": dest_tag,
+            "ipn_url": ipn_url,
+            "auto_confirm": auto_confirm,
+            "note": note,
+            "key": self.publicKey,
+            "version": self.version,
+            "format": self.format,
+        }
+
+        return self.Request(request_method="post", **params)
+
